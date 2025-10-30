@@ -11,6 +11,20 @@ export default {
   theme: {
     extend: {
       colors: {
+        decor: {
+          beige: {
+            100: "#F8F5E9",
+            200: "#E7E8DC",
+          },
+          olive: {
+            100: "#AEBBAE",
+            200: "#D0D5C9",
+            300: "#B3C1B7",
+            400: "#7A9281",
+            500: "#819887",
+            600: "#6A8673",
+          },
+        },
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         card: {
