@@ -26,9 +26,9 @@ interface TagProps {
 const TagsTable = () => {
   const [tagsData, setTagsData] = useState<TagProps[]>([]);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
 
   const fetchTags = async () => {
+    const supabase = createClient();
     setLoading(true);
     const { data, error } = await supabase.from("tags").select("*");
 

@@ -14,10 +14,10 @@ interface UpdateTagProps {
 
 const UpdateTag = ({ tag, updateTable }: UpdateTagProps) => {
   const [name, setName] = useState(tag.name);
-  const supabase = createClient();
   const [isSubmitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
+    const supabase = createClient();
     e.preventDefault();
     setSubmitting(true);
 
@@ -40,6 +40,7 @@ const UpdateTag = ({ tag, updateTable }: UpdateTagProps) => {
   };
 
   const handleDelete = async () => {
+    const supabase = createClient();
     const confirmDelete = confirm(
       `Are you sure you want to delete the tag "${tag.name}"? This action cannot be undone.`,
     );

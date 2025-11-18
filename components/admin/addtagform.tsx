@@ -10,10 +10,10 @@ interface AddTagFormProps {
 
 const AddTagForm = ({ updateTable }: AddTagFormProps) => {
   const [name, setName] = useState("");
-  const supabase = createClient();
   const [isSubmitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
+    const supabase = createClient();
     e.preventDefault();
 
     if (!name) {

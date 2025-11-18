@@ -33,9 +33,9 @@ interface ProductProps {
 const ItemTable = () => {
   const [products, setProducts] = useState<ProductProps[]>([]);
   const [loading, setLoading] = useState(false);
-  const supabase = createClient();
 
   const fetchItems = async () => {
+    const supabase = createClient();
     setLoading(true);
     const { data, error } = await supabase.from("products").select("*");
     setLoading(false);

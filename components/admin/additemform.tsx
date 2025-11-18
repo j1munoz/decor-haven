@@ -19,13 +19,13 @@ const AddItemForm = ({ updateTable }: AddItemFormProps) => {
   const [stock, setStock] = useState(0);
   const [images, setImages] = useState<FileList | null>(null);
   const [isSubmitting, setSubmitting] = useState(false);
-  const supabase = createClient();
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setImages(e.target.files);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
+    const supabase = createClient();
     e.preventDefault();
 
     if (

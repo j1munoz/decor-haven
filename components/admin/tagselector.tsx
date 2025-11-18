@@ -26,17 +26,17 @@ export default function TagSelector({
   selectedTags: string[];
   setSelectedTags: React.Dispatch<React.SetStateAction<string[]>>;
 }) {
-  const supabase = createClient();
   const [tags, setTags] = useState<Tag[]>([]);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
+    const supabase = createClient();
     const fetchTags = async () => {
       const { data } = await supabase.from("tags").select("name, id");
       if (data) setTags(data);
     };
     fetchTags();
-  }, [supabase]);
+  }, []);
 
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) =>

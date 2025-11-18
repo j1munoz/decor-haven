@@ -29,8 +29,6 @@ interface UpdateItemProps {
 }
 
 const UpdateItemForm = ({ item, updateTable }: UpdateItemProps) => {
-  const supabase = createClient();
-
   const [name, setName] = useState(item.name);
   const [price, setPrice] = useState(item.price);
   const [description, setDescription] = useState(item.description);
@@ -41,6 +39,7 @@ const UpdateItemForm = ({ item, updateTable }: UpdateItemProps) => {
   const [isSubmitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
+    const supabase = createClient();
     e.preventDefault();
     setSubmitting(true);
 
@@ -101,6 +100,7 @@ const UpdateItemForm = ({ item, updateTable }: UpdateItemProps) => {
   };
 
   const handleDelete = async () => {
+    const supabase = createClient();
     if (!confirm("Are you sure you want to delete this item?")) return;
 
     setSubmitting(true);
