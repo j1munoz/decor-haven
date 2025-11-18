@@ -13,7 +13,7 @@ export function LogoutButton() {
   };
 
   return (
-    <div className="w-full text-decor-beige-100 hover:text-decor-olive-400 transition-colors">
+    <div className="w-full text-decor-beige-100 hover:text-decor-olive-300 transition-colors text-center text-2xl">
       <button onClick={logout}>Logout</button>
     </div>
   );
