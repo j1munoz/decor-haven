@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "react-hot-toast";
 
@@ -13,7 +12,6 @@ const AddTagForm = ({ updateTable }: AddTagFormProps) => {
   const [isSubmitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    const supabase = createClient();
     e.preventDefault();
 
     if (!name) {
@@ -22,12 +20,17 @@ const AddTagForm = ({ updateTable }: AddTagFormProps) => {
     }
 
     setSubmitting(true);
-    const { error } = await supabase.from("tags").insert({
-      name: name,
+    const req = await fetch("/api/admin/tags", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ name }),
     });
 
     setSubmitting(false);
 
+    const { error } = await req.json();
     if (error) {
       toast.error("Error adding tag.");
       return;

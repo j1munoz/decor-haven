@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { toast } from "react-hot-toast";
 import { Spinner } from "@/components/ui/spinner";
 
@@ -17,16 +16,18 @@ const UpdateTag = ({ tag, updateTable }: UpdateTagProps) => {
   const [isSubmitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    const supabase = createClient();
     e.preventDefault();
     setSubmitting(true);
 
-    const { error } = await supabase
-      .from("tags")
-      .update({
-        name: name,
-      })
-      .eq("id", tag.id);
+    const req = await fetch("/api/admin/tags", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ id: tag.id, name }),
+    });
+
+    const { error } = await req.json();
 
     setSubmitting(false);
 
@@ -40,7 +41,6 @@ const UpdateTag = ({ tag, updateTable }: UpdateTagProps) => {
   };
 
   const handleDelete = async () => {
-    const supabase = createClient();
     const confirmDelete = confirm(
       `Are you sure you want to delete the tag "${tag.name}"? This action cannot be undone.`,
     );
@@ -49,7 +49,15 @@ const UpdateTag = ({ tag, updateTable }: UpdateTagProps) => {
 
     setSubmitting(true);
 
-    const { error } = await supabase.from("tags").delete().eq("id", tag.id);
+    const req = await fetch("/api/admin/tags", {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ id: tag.id }),
+    });
+
+    const { error } = await req.json();
 
     setSubmitting(false);
 
