@@ -6,15 +6,6 @@ import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import { Spinner } from "@/components/ui/spinner";
 import { users } from "@/data/admin/tables";
-import {
-  Dialog,
-  DialogTrigger,
-  DialogHeader,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { FaEdit } from "react-icons/fa";
 
 interface CustomerTableProps {
   first_name: string;
@@ -70,7 +61,6 @@ const CustomerTable = () => {
           Loading admins...
         </div>
       )}
-      {/* <AddTag updateTable={() => fetchTags()} /> */}
     </div>
   );
 };
