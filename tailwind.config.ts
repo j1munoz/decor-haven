@@ -10,6 +10,9 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        scheherazade: ["'Scheherazade New'", "serif"],
+      },
       colors: {
         decor: {
           beige: {
