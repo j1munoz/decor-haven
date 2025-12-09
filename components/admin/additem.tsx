@@ -6,7 +6,7 @@ import {
   DialogContent,
 } from "@/components/ui/dialog";
 import { DialogDescription } from "@radix-ui/react-dialog";
-import AddTagForm from "@/components/admin/addtagform";
+import AddItemForm from "@/components/admin/additemform";
 
 interface AddItemProps {
   updateTable: () => void;
@@ -27,7 +27,7 @@ const AddItem = ({ updateTable }: AddItemProps) => {
             Add in a new item to the database.
           </DialogDescription>
         </DialogHeader>
-        <AddTagForm updateTable={() => updateTable} />
+        <AddItemForm updateTable={() => updateTable} />
       </DialogContent>
     </Dialog>
   );

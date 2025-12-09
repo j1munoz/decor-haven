@@ -1,5 +1,4 @@
 "use client";
-import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import { Spinner } from "@/components/ui/spinner";
@@ -28,20 +27,19 @@ const TagsTable = () => {
   const [loading, setLoading] = useState(true);
 
   const fetchTags = async () => {
-    const supabase = createClient();
     setLoading(true);
-    const { data, error } = await supabase.from("tags").select("*");
+    const res = await fetch("/api/admin/tags");
 
-    setLoading(false);
-
-    if (error) {
+    if (!res.ok) {
       toast.error("Error fetching tags.");
+      setLoading(false);
       return;
     }
 
-    if (data) {
-      setTagsData(data || []);
-    }
+    const data = await res.json();
+    setLoading(false);
+
+    setTagsData(data || []);
   };
 
   useEffect(() => {
@@ -83,7 +81,7 @@ const TagsTable = () => {
       {loading && (
         <div className="flex items-center gap-2 text-2xl text-decor-olive-600">
           <Spinner />
-          Loading items...
+          Loading tags...
         </div>
       )}
       <AddTag updateTable={() => fetchTags()} />

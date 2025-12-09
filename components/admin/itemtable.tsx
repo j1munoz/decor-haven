@@ -4,7 +4,6 @@ import { items } from "@/data/admin/tables";
 import DataTable from "@/components/admin/table";
 import { TableCell } from "@/components/ui/table";
 import AddItem from "@/components/admin/additem";
-import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import { Spinner } from "@/components/ui/spinner";
@@ -35,19 +34,18 @@ const ItemTable = () => {
   const [loading, setLoading] = useState(false);
 
   const fetchItems = async () => {
-    const supabase = createClient();
     setLoading(true);
-    const { data, error } = await supabase.from("products").select("*");
-    setLoading(false);
-
-    if (error) {
+    const res = await fetch("/api/admin/products");
+    if (!res.ok) {
       toast.error("Error fetching products.");
+      setLoading(false);
       return;
     }
+    setLoading(false);
 
-    if (data) {
-      setProducts(data || []);
-    }
+    const data = await res.json();
+
+    setProducts(data || []);
   };
 
   useEffect(() => {

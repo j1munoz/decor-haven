@@ -8,7 +8,7 @@ export default async function ProtectedPage() {
   if (!data) {
     redirect("/auth/sign-in");
   }
-
+  // Fix this here to properly check for admin role
   const user = await getUser(data.sub);
   const isAdmin = user?.role === 2;
 

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -30,11 +29,18 @@ export default function TagSelector({
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    const supabase = createClient();
     const fetchTags = async () => {
-      const { data } = await supabase.from("tags").select("name, id");
-      if (data) setTags(data);
+      const res = await fetch("/api/admin/tags");
+
+      if (!res.ok) {
+        console.error("Error fetching tags.");
+        return;
+      }
+
+      const data = await res.json();
+      setTags(data || []);
     };
+
     fetchTags();
   }, []);
 

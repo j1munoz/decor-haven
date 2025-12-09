@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "react-hot-toast";
 import TagSelector from "@/components/admin/tagselector";
@@ -12,7 +11,6 @@ import {
   CarouselPrevious,
   CarouselNext,
 } from "@/components/ui/carousel";
-import Image from "next/image";
 
 interface UpdateItemProps {
   item: {
@@ -38,51 +36,49 @@ const UpdateItemForm = ({ item, updateTable }: UpdateItemProps) => {
   const [images, setImages] = useState<FileList | null>(null);
   const [isSubmitting, setSubmitting] = useState(false);
 
+  const convertFileToBase64 = (
+    file: File,
+  ): Promise<{ name: string; base64: string }> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () =>
+        resolve({ name: file.name, base64: reader.result as string });
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
-    const supabase = createClient();
     e.preventDefault();
     setSubmitting(true);
 
-    const updatedImageUrls = [...item.image_urls];
+    let newImagesBase64: { name: string; base64: string }[] = [];
 
-    // If user added new images
     if (images && images.length > 0) {
-      for (const file of Array.from(images)) {
-        const fileName = `${Date.now()}-${file.name}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from("products")
-          .upload(fileName, file);
-
-        if (uploadError) {
-          console.error("Image upload failed:", uploadError);
-          toast.error("Some images failed to upload.");
-          continue;
-        }
-
-        const { data: publicUrlData } = supabase.storage
-          .from("products")
-          .getPublicUrl(fileName);
-
-        if (publicUrlData?.publicUrl) {
-          updatedImageUrls.push(publicUrlData.publicUrl);
-        }
-      }
+      const filesArray = Array.from(images);
+      newImagesBase64 = await Promise.all(filesArray.map(convertFileToBase64));
     }
 
     // Update the product
-    const { error } = await supabase
-      .from("products")
-      .update({
+    const req = await fetch("/api/admin/products", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        id: item.id,
         name,
         price,
         tags,
         description,
         included,
         stock,
-        image_urls: updatedImageUrls,
-      })
-      .eq("id", item.id);
+        existingUrls: item.image_urls,
+        newImages: newImagesBase64,
+      }),
+    });
+
+    const { error } = await req.json();
 
     setSubmitting(false);
 
@@ -100,35 +96,23 @@ const UpdateItemForm = ({ item, updateTable }: UpdateItemProps) => {
   };
 
   const handleDelete = async () => {
-    const supabase = createClient();
+    // const supabase = createClient();
     if (!confirm("Are you sure you want to delete this item?")) return;
 
     setSubmitting(true);
 
     try {
-      const filePaths = item.image_urls.map((url) => {
-        const parts = url.split("/");
-        return parts.slice(parts.indexOf("products") + 1).join("/");
+      const req = await fetch("/api/admin/products", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id: item.id, image_urls: item.image_urls }),
       });
 
-      const { error: storageError } = await supabase.storage
-        .from("products")
-        .remove(filePaths);
+      const { error } = await req.json();
 
-      if (storageError) {
-        console.error("Failed to delete images:", storageError);
-        toast.error("Failed to delete item images.");
-        setSubmitting(false);
-        return;
-      }
-
-      const { error: dbError } = await supabase
-        .from("products")
-        .delete()
-        .eq("id", item.id);
-
-      if (dbError) {
-        console.error("Failed to delete item:", dbError);
+      if (error) {
         toast.error("Failed to delete item.");
         setSubmitting(false);
         return;
@@ -156,7 +140,7 @@ const UpdateItemForm = ({ item, updateTable }: UpdateItemProps) => {
               key={index}
               className="w-full h-64 flex items-center justify-center"
             >
-              <Image
+              <img
                 src={url}
                 alt={`Item Image ${index + 1}`}
                 className="object-contain h-64"

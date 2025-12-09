@@ -2,7 +2,6 @@
 import { useState } from "react";
 import TagSelector from "@/components/admin/tagselector";
 import FeatureInput from "@/components/admin/featuretext";
-import { createClient } from "@/lib/supabase/client";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "react-hot-toast";
 
@@ -24,66 +23,55 @@ const AddItemForm = ({ updateTable }: AddItemFormProps) => {
     setImages(e.target.files);
   };
 
+  const fileToBase64 = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+    });
+
   const handleSubmit = async (e: React.FormEvent) => {
-    const supabase = createClient();
     e.preventDefault();
 
-    if (
-      !name ||
-      !price ||
-      !description ||
-      tags.length === 0 ||
-      included.length === 0 ||
-      !stock ||
-      !images
-    ) {
-      toast.error("Please fill out all fields.");
+    if (!images) {
+      toast.error("Please upload at least one image.");
       return;
     }
 
     setSubmitting(true);
 
-    const uploadedImageUrls: string[] = [];
+    // Convert files to Base64
+    const imageFiles = await Promise.all(
+      Array.from(images).map(async (file) => ({
+        name: file.name,
+        base64: await fileToBase64(file),
+      })),
+    );
 
-    for (const file of Array.from(images)) {
-      const fileName = `${Date.now()}-${file.name}`;
-      const { error } = await supabase.storage
-        .from("products")
-        .upload(fileName, file);
-
-      if (error) {
-        console.error("Upload error:", error);
-        continue;
-      }
-
-      const { data: publicUrl } = supabase.storage
-        .from("products")
-        .getPublicUrl(fileName);
-      if (publicUrl?.publicUrl) {
-        uploadedImageUrls.push(publicUrl.publicUrl);
-      }
-    }
-
-    const { error } = await supabase.from("products").insert([
-      {
+    const res = await fetch("/api/admin/products", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
         name,
-        description,
-        stock,
-        included,
-        tags,
-        image_urls: uploadedImageUrls,
         price,
-      },
-    ]);
+        description,
+        tags,
+        included,
+        stock,
+        images: imageFiles,
+      }),
+    });
 
     setSubmitting(false);
 
-    if (error) {
-      console.error("Insert error:", error);
-      toast.error("Error adding item, please try again.");
+    if (!res.ok) {
+      toast.error("Error adding item.");
       return;
     }
 
+    updateTable();
+    toast.success("Item added successfully!");
     setName("");
     setPrice(0);
     setDescription("");
@@ -91,8 +79,6 @@ const AddItemForm = ({ updateTable }: AddItemFormProps) => {
     setIncluded([]);
     setStock(0);
     setImages(null);
-    toast.success("Item added successfully!");
-    updateTable();
   };
 
   return (
