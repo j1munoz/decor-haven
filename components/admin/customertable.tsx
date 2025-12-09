@@ -16,19 +16,19 @@ import {
 } from "@/components/ui/dialog";
 import { FaEdit } from "react-icons/fa";
 
-interface AdminTableProps {
+interface CustomerTableProps {
   first_name: string;
   last_name: string;
   role: number;
 }
 
-const AdminTable = () => {
-  const [adminData, setAdminData] = useState<AdminTableProps[]>([]);
+const CustomerTable = () => {
+  const [customerData, setCustomerData] = useState<CustomerTableProps[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchAdminData = async () => {
+  const fetchCustomerData = async () => {
     setLoading(true);
-    const res = await fetch("/api/admin/admins");
+    const res = await fetch("/api/admin/customers");
 
     if (!res.ok) {
       toast.error("Error fetching admin data.");
@@ -37,12 +37,12 @@ const AdminTable = () => {
     }
 
     const data = await res.json();
-    setAdminData(data);
+    setCustomerData(data);
     setLoading(false);
   };
 
   useEffect(() => {
-    fetchAdminData();
+    fetchCustomerData();
   }, []);
 
   return (
@@ -52,14 +52,14 @@ const AdminTable = () => {
       </div>
       <DataTable
         headers={users}
-        data={adminData}
-        row={(admin) => (
+        data={customerData}
+        row={(customer) => (
           <>
             <TableCell className="whitespace-normal break-words">
-              {admin.first_name}
+              {customer.first_name}
             </TableCell>
             <TableCell className="whitespace-normal break-words">
-              {admin.last_name}
+              {customer.last_name}
             </TableCell>
           </>
         )}
@@ -75,4 +75,4 @@ const AdminTable = () => {
   );
 };
 
-export default AdminTable;
+export default CustomerTable;
