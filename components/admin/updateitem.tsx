@@ -27,6 +27,7 @@ interface UpdateItemProps {
 }
 
 const UpdateItemForm = ({ item, updateTable }: UpdateItemProps) => {
+  const [id, setId] = useState(item.id);
   const [name, setName] = useState(item.name);
   const [price, setPrice] = useState(item.price);
   const [description, setDescription] = useState(item.description);
@@ -36,59 +37,42 @@ const UpdateItemForm = ({ item, updateTable }: UpdateItemProps) => {
   const [images, setImages] = useState<FileList | null>(null);
   const [isSubmitting, setSubmitting] = useState(false);
 
-  const convertFileToBase64 = (
-    file: File,
-  ): Promise<{ name: string; base64: string }> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () =>
-        resolve({ name: file.name, base64: reader.result as string });
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
 
-    let newImagesBase64: { name: string; base64: string }[] = [];
+    const formData = new FormData();
+    formData.append("id", id.toString());
+    formData.append("name", name);
+    formData.append("price", price.toString());
+    formData.append("description", description);
+    formData.append("stock", stock.toString());
+    tags.forEach((tag) => formData.append("tags[]", tag));
+    included.forEach((feat) => formData.append("included[]", feat));
+    item.image_urls.forEach((url) => formData.append("oldImageUrls[]", url));
+    if (images)
+      Array.from(images).forEach((file) => formData.append("newImages", file));
 
-    if (images && images.length > 0) {
-      const filesArray = Array.from(images);
-      newImagesBase64 = await Promise.all(filesArray.map(convertFileToBase64));
+    try {
+      const res = await fetch("/api/admin/products", {
+        method: "PUT",
+        body: formData,
+      });
+
+      const data = await res.json();
+      setSubmitting(false);
+
+      if (data.error) {
+        toast.error(data.error);
+        return;
+      }
+
+      toast.success("Item updated!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Something went wrong while updating the item.");
+      setSubmitting(false);
     }
-
-    // Update the product
-    const req = await fetch("/api/admin/products", {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        id: item.id,
-        name,
-        price,
-        tags,
-        description,
-        included,
-        stock,
-        existingUrls: item.image_urls,
-        newImages: newImagesBase64,
-      }),
-    });
-
-    const { error } = await req.json();
-
-    setSubmitting(false);
-
-    if (error) {
-      toast.error("Failed to update item.");
-      return;
-    }
-
-    toast.success("Item updated!");
-    updateTable();
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
