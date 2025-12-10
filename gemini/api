@@ -1,0 +1,100 @@
+import os
+from google import genai
+from google.genai.types import GenerateContentConfig
+
+# --- Configuration ---
+
+# Make sure you have Gemini API key here
+# You can get a Gemini API key from Google AI Studio, left sidebar has a tab "Get API key"
+# Also pip install google-genai to run code
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+if not GEMINI_API_KEY:
+    raise ValueError("GEMINI_API_KEY environment variable is not set")
+
+try:
+    client = genai.Client()
+except Exception as e:
+    print(f"Error initializing Gemini Client: {e}")
+    exit()
+
+MODEL_NAME = "gemini-2.5-flash-image"
+
+# TODO: update these paths when a user uploads images
+ROOM_IMAGE_PATH = "path/to/your/room_picture.jpg"
+DECOR_IMAGE_PATH = "path/to/your/decor_picture.png"
+
+def visualize_decor(room_path: str, decor_path: str, user_prompt: str, output_filename: str = "decorated_room_output.png"):
+    uploaded_files = []
+    try:
+        # uploads image of the room to be decorated
+        print(f"Uploading room image: {room_path}...")
+        room_file = client.files.upload(file=room_path)
+        uploaded_files.append(room_file)
+        print("Room image uploaded")
+        
+        # uploads image of the decoration(s)
+        print(f"Uploading decoration image: {decor_path}...")
+        decor_file = client.files.upload(file=decor_path)
+        uploaded_files.append(decor_file)
+        print("Decoration image uploaded")
+        
+        # prompt + what the user specified in passed argument user_prompt
+        prompt = (
+            "Create a single, photorealistic composite image. "
+            "Use the first image as the **background room**. "
+            "Take the decoration object(s) from the second image and place them into the background room. "
+            f"**Your specific instruction for placement is:** {user_prompt}"
+            "Ensure the lighting, perspective, and scale are adjusted to make the final image look realistic."
+        )
+
+        content = [room_file, decor_file, prompt]
+
+        # result image config
+        config = GenerateContentConfig(
+            response_mime_type="image/png",
+            response_modalities=['IMAGE']
+        )
+        
+        print("Generating image...")
+        
+        # call Gemini
+        response = client.models.generate_content(
+            model=MODEL_NAME,
+            contents=content,
+            config=config,
+        )
+
+        # get result image from Gemini's response
+        if response.parts and response.parts[0].inline_data:
+            image_data = response.parts[0].inline_data.data
+            
+            with open(output_filename, "wb") as f:
+                f.write(image_data)
+            
+            print(f"Image saved as: **{output_filename}**")
+        else:
+            print("Generation failed or no image was returned.")
+            print(f"Full response: {response}")
+
+    except Exception as e:
+        print(f"\nAn error occurred during the process: {e}")
+    finally:
+        # Clean up uploaded files (optional but recommended for large files)
+        print("Cleaning up uploaded files...")
+        for f in uploaded_files:
+            client.files.delete(name=f.name)
+        print("Cleanup complete.")
+
+if __name__ == "__main__":
+    
+    if not os.path.exists(ROOM_IMAGE_PATH) or not os.path.exists(DECOR_IMAGE_PATH):
+        print("ERROR: Please update ROOM_IMAGE_PATH and DECOR_IMAGE_PATH with valid file paths.")
+    else:
+        # edit this to test whatever you like
+        user_prompt = "Place the decorations (balloons and banners) on the wall directly above the central couch. Make the dishes appear on the coffee table in the middle of the room."
+        
+        visualize_decor(
+            room_path=ROOM_IMAGE_PATH,
+            decor_path=DECOR_IMAGE_PATH,
+            user_prompt=user_prompt
+        )
