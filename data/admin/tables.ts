@@ -17,6 +17,7 @@ export const orders = [
   "Item Name",
   "From",
   "To",
+  "Price",
   "Date Rented",
   "Status",
 ];
