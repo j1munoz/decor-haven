@@ -23,54 +23,45 @@ const AddItemForm = ({ updateTable }: AddItemFormProps) => {
     setImages(e.target.files);
   };
 
-  const fileToBase64 = (file: File): Promise<string> =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-    });
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!images) {
-      toast.error("Please upload at least one image.");
+    if (
+      !images ||
+      !name ||
+      !price ||
+      !description ||
+      tags.length === 0 ||
+      included.length === 0 ||
+      !stock
+    ) {
+      toast.error("Please fill out all fields.");
       return;
     }
 
     setSubmitting(true);
 
-    // Convert files to Base64
-    const imageFiles = await Promise.all(
-      Array.from(images).map(async (file) => ({
-        name: file.name,
-        base64: await fileToBase64(file),
-      })),
-    );
+    const formData = new FormData();
+    formData.append("name", name);
+    formData.append("price", price.toString());
+    formData.append("description", description);
+    formData.append("stock", stock.toString());
+    tags.forEach((tag) => formData.append("tags[]", tag));
+    included.forEach((feat) => formData.append("included[]", feat));
+    Array.from(images).forEach((file) => formData.append("image_urls[]", file));
 
     const res = await fetch("/api/admin/products", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name,
-        price,
-        description,
-        tags,
-        included,
-        stock,
-        images: imageFiles,
-      }),
+      body: formData, // do NOT set Content-Type here!
     });
 
+    const data = await res.json();
     setSubmitting(false);
 
-    if (!res.ok) {
-      toast.error("Error adding item.");
+    if (data.error) {
+      toast.error(data.error);
       return;
     }
 
-    updateTable();
     toast.success("Item added successfully!");
     setName("");
     setPrice(0);
@@ -79,6 +70,7 @@ const AddItemForm = ({ updateTable }: AddItemFormProps) => {
     setIncluded([]);
     setStock(0);
     setImages(null);
+    updateTable();
   };
 
   return (

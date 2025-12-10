@@ -1,20 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
 
-type ProductBody = {
-  name: string;
-  price: number;
-  description: string;
-  tags: string[];
-  included: string[];
-  stock: number;
-  images: ProductFile[];
-};
-
-interface ProductFile {
-  name: string;
-  base64: string;
-}
-
 export const GET = async () => {
   const supabase = createClient();
 
@@ -30,65 +15,78 @@ export const GET = async () => {
 };
 
 export const POST = async (request: Request) => {
-  const supabase = createClient();
-  const body = (await request.json()) as ProductBody;
-  const { name, price, description, tags, included, stock, images } = body;
+  try {
+    const supabase = await createClient();
 
-  if (
-    !name ||
-    !price ||
-    !description ||
-    tags.length === 0 ||
-    included.length === 0 ||
-    !stock ||
-    !images
-  ) {
-    return new Response(
-      JSON.stringify({ error: "Please fill out all fields." }),
-      { status: 400 },
-    );
-  }
+    const formData = await request.formData();
+    const name = formData.get("name")?.toString() || "";
+    const price = Number(formData.get("price") || 0);
+    const description = formData.get("description")?.toString() || "";
+    const stock = Number(formData.get("stock") || 0);
+    const tags = formData.getAll("tags[]").map((t) => t.toString());
+    const included = formData.getAll("included[]").map((i) => i.toString());
+    const images = formData.getAll("image_urls[]") as File[];
 
-  const uploadedImageUrls: string[] = [];
+    if (
+      !name ||
+      !price ||
+      !description ||
+      !stock ||
+      tags.length === 0 ||
+      included.length === 0 ||
+      images.length === 0
+    ) {
+      return new Response(
+        JSON.stringify({ error: "Please fill out all fields." }),
+        { status: 400 },
+      );
+    }
 
-  for (const file of images) {
-    const fileName = `${Date.now()}-${file.name}`;
+    const uploadedImageUrls: string[] = [];
 
-    const base64Data = file.base64.split(",")[1];
-    const buffer = Buffer.from(base64Data, "base64");
+    for (const file of images) {
+      const fileName = `${Date.now()}-${file.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from("products")
+        .upload(fileName, file);
 
-    const { error } = await supabase.storage
-      .from("products")
-      .upload(fileName, buffer);
-    if (error) console.error("Upload error:", error);
+      if (uploadError) continue;
 
-    const { data: publicUrl } = supabase.storage
-      .from("products")
-      .getPublicUrl(fileName);
-    if (publicUrl?.publicUrl) uploadedImageUrls.push(publicUrl.publicUrl);
-  }
+      const { data: publicUrlData } = supabase.storage
+        .from("products")
+        .getPublicUrl(fileName);
 
-  const { error } = await supabase.from("products").insert([
-    {
-      name,
-      description,
-      stock,
-      included,
-      tags,
-      image_urls: images,
-      price,
-    },
-  ]);
+      if (publicUrlData?.publicUrl)
+        uploadedImageUrls.push(publicUrlData.publicUrl);
+    }
 
-  if (error) {
-    return new Response(JSON.stringify({ error: "Error fetching items." }), {
+    const { error: insertError } = await supabase.from("products").insert([
+      {
+        name,
+        price,
+        description,
+        stock,
+        tags,
+        included,
+        image_urls: uploadedImageUrls,
+      },
+    ]);
+
+    if (insertError)
+      return new Response(
+        JSON.stringify({ error: "Failed to insert product" }),
+        { status: 500 },
+      );
+
+    return new Response(JSON.stringify({ success: true, uploadedImageUrls }), {
+      status: 200,
+    });
+  } catch (err) {
+    console.error(err);
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
     });
   }
-
-  return new Response(JSON.stringify({ message: "Item added successfully." }), {
-    status: 201,
-  });
 };
 
 export const DELETE = async (req: Request) => {
@@ -131,74 +129,87 @@ export const DELETE = async (req: Request) => {
   );
 };
 
-export const PUT = async (req: Request) => {
-  const supabase = createClient();
+export const PUT = async (request: Request) => {
+  try {
+    const supabase = await createClient();
+    const formData = await request.formData();
 
-  const {
-    id,
-    name,
-    price,
-    description,
-    tags,
-    included,
-    stock,
-    existingUrls,
-    newImages,
-  } = await req.json();
+    const id = formData.get("id")?.toString();
+    const name = formData.get("name")?.toString();
+    const price = Number(formData.get("price") || 0);
+    const description = formData.get("description")?.toString();
+    const stock = Number(formData.get("stock") || 0);
+    const tags = formData.getAll("tags[]").map((t) => t.toString());
+    const included = formData.getAll("included[]").map((i) => i.toString());
+    const oldImageUrls = formData
+      .getAll("oldImageUrls[]")
+      .map((i) => i.toString());
+    const newImages = formData.getAll("newImages") as File[];
 
-  const finalUrls: string[] = [...existingUrls];
+    if (!id || !name || !price || !description || !stock) {
+      return new Response(
+        JSON.stringify({ error: "Missing required fields" }),
+        { status: 400 },
+      );
+    }
 
-  if (newImages && newImages.length > 0) {
-    for (const img of newImages) {
-      try {
-        const fileName = `${Date.now()}-${img.name}`;
+    let updatedImageUrls: string[] = [];
 
-        const base64 = img.base64.split(",")[1];
-        const buffer = Buffer.from(base64, "base64");
-
+    if (newImages.length > 0) {
+      // If new images exist, upload them and replace old ones
+      for (const file of newImages) {
+        const fileName = `${Date.now()}-${file.name}`;
         const { error: uploadError } = await supabase.storage
           .from("products")
-          .upload(fileName, buffer);
+          .upload(fileName, file);
 
         if (uploadError) {
-          console.error("Upload error:", uploadError);
-          continue;
+          return new Response(
+            JSON.stringify({ error: "Failed to upload image" }),
+            { status: 500 },
+          );
         }
 
-        const { data: urlData } = supabase.storage
+        const { data: publicUrlData } = supabase.storage
           .from("products")
           .getPublicUrl(fileName);
 
-        if (urlData?.publicUrl) {
-          finalUrls.push(urlData.publicUrl);
-        }
-      } catch (err) {
-        console.error("Error processing new image:", err);
+        if (publicUrlData?.publicUrl)
+          updatedImageUrls.push(publicUrlData.publicUrl);
       }
+    } else {
+      // No new images → keep old ones
+      updatedImageUrls = [...oldImageUrls];
     }
-  }
 
-  const { error } = await supabase
-    .from("products")
-    .update({
-      name,
-      price,
-      description,
-      tags,
-      included,
-      stock,
-      image_urls: finalUrls,
-    })
-    .eq("id", id);
+    // Update product by id
+    const { error: updateError } = await supabase
+      .from("products")
+      .update({
+        name,
+        price,
+        description,
+        stock,
+        tags,
+        included,
+        image_urls: updatedImageUrls,
+      })
+      .eq("id", id);
 
-  if (error) {
-    return new Response(JSON.stringify({ error: "Error updating product." }), {
+    if (updateError) {
+      return new Response(JSON.stringify({ error: updateError.message }), {
+        status: 500,
+      });
+    }
+
+    return new Response(
+      JSON.stringify({ success: true, image_urls: updatedImageUrls }),
+      { status: 200 },
+    );
+  } catch (err) {
+    console.error(err);
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
     });
   }
-
-  return new Response(
-    JSON.stringify({ message: "Product updated successfully." }),
-    { status: 200 },
-  );
 };

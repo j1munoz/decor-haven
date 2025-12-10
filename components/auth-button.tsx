@@ -19,9 +19,9 @@ const AuthButton = async () => {
           <MdAccountCircle className="text-4xl" />
           <p className="text-2xl">Account</p>
         </div>
-        <div className="hidden group-hover:flex flex-col bg-decor-olive-600 absolute top-[82%] w-full p-4 text-2xl">
+        <div className="hidden group-hover:flex flex-col bg-decor-olive-600 absolute top-[82%] w-full p-4 text-2xl z-20 shadow-xl">
           {user ? (
-            <div className="w-full flex flex-col gap-4">
+            <div className="w-full flex flex-col items-center gap-4">
               <Link
                 href="/"
                 className="text-decor-beige-100 hover:text-decor-olive-300 transition-colors"
@@ -31,7 +31,7 @@ const AuthButton = async () => {
               <LogoutButton />
             </div>
           ) : (
-            <div className="w-full flex flex-col gap-4">
+            <div className="w-full flex flex-col items-center gap-4">
               <Link
                 href="/auth/login"
                 className="text-decor-beige-100 hover:text-decor-olive-300 transition-colors"
