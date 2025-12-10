@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
-// import Navbar from "@/components/navbar";
+import Navbar from "@/components/navbar";
 import "./globals.css";
+import { Toaster } from "react-hot-toast";
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
@@ -21,13 +22,14 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`font-scheherazade antialiased bg-decor-beige-100`}>
+        <Toaster position="top-center" reverseOrder={false} />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
-          {/* <Navbar /> */}
+          <Navbar />
           {children}
         </ThemeProvider>
       </body>
