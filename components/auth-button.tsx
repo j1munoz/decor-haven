@@ -49,7 +49,7 @@ const AuthButton = async () => {
         </div>
       </div>
       <Link
-        href="/auth/login"
+        href="/cart"
         className="flex items-center gap-3 text-black hover:text-decor-olive-300 transition-colors"
       >
         <IoCart className="text-4xl" />

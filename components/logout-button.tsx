@@ -9,6 +9,11 @@ export function LogoutButton() {
   const logout = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
+
+    // Remove user ID from localStorage
+    localStorage.removeItem("userId");
+
+    // Redirect to login page
     router.push("/auth/login");
   };
 
