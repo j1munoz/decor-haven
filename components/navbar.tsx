@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import Logo from "@/public/logo.svg";
 import AuthButton from "@/components/auth-button";
-import SearchBar from "@/components/searchbar";
+// import SearchBar from "@/components/searchbar";
 
 const Navbar = () => {
   return (
@@ -10,7 +10,7 @@ const Navbar = () => {
       <Link href="/">
         <Image src={Logo} alt="logo" />
       </Link>
-      <SearchBar />
+      {/* <SearchBar /> */}
       <AuthButton />
     </div>
   );

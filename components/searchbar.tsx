@@ -1,17 +1,19 @@
 "use client";
 
-import { useState } from "react";
 import { FaSearch } from "react-icons/fa";
 
-const SearchBar = () => {
-  const [query, setQuery] = useState("");
-  console.log("Search query:", query);
+interface SearchBarProps {
+  query: string;
+  setQuery: (value: string) => void;
+}
 
+const SearchBar = ({ query, setQuery }: SearchBarProps) => {
   return (
     <div className="flex flex-col items-center justify-center w-[35vw] relative">
       <input
         type="text"
         placeholder="What are you searching for..."
+        value={query}
         onChange={(e) => setQuery(e.target.value)}
         className="w-full p-4 rounded-md bg-decor-beige-100 border-2 border-black text-black text-2xl focus:border-decor-olive-600 focus:outline-none"
       />
